@@ -26,7 +26,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Toast.makeText(MainActivity.this, "短信已发送", Toast.LENGTH_SHORT).show();
-                mCountDownTextView.startCountDown(10);
+                mCountDownTextView.startCountDown(60);
             }
         });
     }
