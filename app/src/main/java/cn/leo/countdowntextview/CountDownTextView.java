@@ -116,7 +116,7 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
                 long l = timeUnit.convert(millisUntilFinished, TimeUnit.MILLISECONDS);
                 setText(String.format(mCountDownText, l));
                 if (mOnCountDownTickListener != null) {
-                    mOnCountDownTickListener.onTick(millisUntilFinished);
+                    mOnCountDownTickListener.onTick(l);
                 }
             }
 
@@ -142,7 +142,7 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
     }
 
     interface OnCountDownTickListener {
-        void onTick(long millisUntilFinished);
+        void onTick(long untilFinished);
     }
 
     interface OnCountDownFinishListener {
