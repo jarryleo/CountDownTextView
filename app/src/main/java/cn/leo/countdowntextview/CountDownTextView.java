@@ -50,6 +50,7 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
     private void onDestroy() {
         if (mCountDownTimer != null) {
             mCountDownTimer.cancel();
+            mCountDownTimer = null;
         }
     }
 
