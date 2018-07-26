@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 public class CountDownTextView extends TextView implements LifecycleObserver, View.OnClickListener {
 
     private CountDownTimer mCountDownTimer;
+    private OnCountDownTickListener mOnCountDownTickListener;
     private OnCountDownFinishListener mOnCountDownFinishListener;
     private String mNormalText;
     private String mCountDownText;
@@ -92,7 +93,7 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
     public CountDownTextView startCountDown(long time, final TimeUnit timeUnit) {
         if (mCountDownTimer != null) return this;
         final long millisInFuture = timeUnit.toMillis(time) + 500;
-        long interval = 1000L;
+        long interval = TimeUnit.MILLISECONDS.convert(1, timeUnit);
         if (TextUtils.isEmpty(mCountDownText)) {
             mCountDownText = getText().toString();
         }
@@ -101,6 +102,9 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
             public void onTick(long millisUntilFinished) {
                 long l = timeUnit.convert(millisUntilFinished, TimeUnit.MILLISECONDS);
                 setText(String.format(mCountDownText, l));
+                if (mOnCountDownTickListener != null) {
+                    mOnCountDownTickListener.onTick(millisUntilFinished);
+                }
             }
 
             @Override
@@ -116,10 +120,17 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
         return this;
     }
 
+    public void setOnCountDownTickListener(OnCountDownTickListener onCountDownTickListener) {
+        mOnCountDownTickListener = onCountDownTickListener;
+    }
+
     public void setOnCountDownFinishListener(OnCountDownFinishListener onCountDownFinishListener) {
         mOnCountDownFinishListener = onCountDownFinishListener;
     }
 
+    interface OnCountDownTickListener {
+        void onTick(long millisUntilFinished);
+    }
 
     interface OnCountDownFinishListener {
         void onFinish();
