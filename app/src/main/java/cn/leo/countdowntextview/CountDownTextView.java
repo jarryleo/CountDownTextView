@@ -78,7 +78,7 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
     }
 
     /**
-     * 非倒计时状态本文
+     * 非倒计时状态文本
      *
      * @param normalText 文本
      */
@@ -214,11 +214,11 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
         return this;
     }
 
-    interface OnCountDownTickListener {
+    public interface OnCountDownTickListener {
         void onTick(long untilFinished);
     }
 
-    interface OnCountDownFinishListener {
+    public interface OnCountDownFinishListener {
         void onFinish();
     }
 
