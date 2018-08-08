@@ -36,6 +36,8 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
     private boolean mClickable = false;
     //页面关闭后倒计时是否保持，再次开启倒计时继续；持久化存储，不会执行代码
     private boolean mCloseKeepCountDown = false;
+    //是否把时间格式化成时分秒
+    private boolean mShowFormatTime = false;
 
     public CountDownTextView(Context context) {
         this(context, null);
@@ -87,13 +89,27 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
     }
 
     /**
-     * 设置倒计时文本内容 时间用 %1$d 表示
+     * 设置倒计时文本内容
      *
-     * @param countDownText 倒计时文本
+     * @param front  倒计时文本前部分
+     * @param latter 倒计时文本后部分
      */
-    public CountDownTextView setCountDownText(String countDownText) {
-        mCountDownText = countDownText;
+    public CountDownTextView setCountDownText(String front, String latter) {
+        mCountDownText = front + "%1$s" + latter;
         return this;
+    }
+
+    /**
+     * 顺序计时，非倒计时
+     *
+     * @param second 计时时间秒
+     */
+    public void startCount(long second) {
+        startCount(second, TimeUnit.SECONDS);
+    }
+
+    public void startCount(long second, final TimeUnit timeUnit) {
+        count(second, timeUnit, false);
     }
 
     /**
@@ -101,14 +117,27 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
      *
      * @param second 多少秒
      */
-    public CountDownTextView startCountDown(long second) {
+    public void startCountDown(long second) {
         startCountDown(second, TimeUnit.SECONDS);
-        return this;
     }
 
-    public CountDownTextView startCountDown(long time, final TimeUnit timeUnit) {
-        if (mCountDownTimer != null) return this;
-        long millisInFuture = timeUnit.toMillis(time) + 500;
+    public void startCountDown(long time, final TimeUnit timeUnit) {
+        count(time, timeUnit, true);
+    }
+
+    /**
+     * 计时方案
+     *
+     * @param time        时间
+     * @param timeUnit    时间单位
+     * @param isCountDown 是否是倒计时，false正向计时
+     */
+    private void count(final long time, final TimeUnit timeUnit, final boolean isCountDown) {
+        if (mCountDownTimer != null) {
+            mCountDownTimer.cancel();
+            mCountDownTimer = null;
+        }
+        final long millisInFuture = timeUnit.toMillis(time) + 500;
         long interval = TimeUnit.MILLISECONDS.convert(1, timeUnit);
         if (mCloseKeepCountDown) {
             setLastCountTimestamp(millisInFuture, interval);
@@ -119,8 +148,15 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
         mCountDownTimer = new CountDownTimer(millisInFuture, interval) {
             @Override
             public void onTick(long millisUntilFinished) {
-                long l = timeUnit.convert(millisUntilFinished, TimeUnit.MILLISECONDS);
-                setText(String.format(mCountDownText, l));
+                long count = isCountDown ? millisUntilFinished : (millisInFuture - millisUntilFinished);
+                long l = timeUnit.convert(count, TimeUnit.MILLISECONDS);
+                String showTime;
+                if (mShowFormatTime) {
+                    showTime = generateTime(count);
+                } else {
+                    showTime = String.valueOf(l);
+                }
+                setText(String.format(mCountDownText, showTime));
                 if (mOnCountDownTickListener != null) {
                     mOnCountDownTickListener.onTick(l);
                 }
@@ -136,7 +172,6 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
             }
         };
         mCountDownTimer.start();
-        return this;
     }
 
     public CountDownTextView setOnCountDownTickListener(OnCountDownTickListener onCountDownTickListener) {
@@ -166,6 +201,16 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
      */
     public CountDownTextView setCloseKeepCountDown(boolean keep) {
         mCloseKeepCountDown = keep;
+        return this;
+    }
+
+    /**
+     * 是否格式化时间
+     *
+     * @param formatTime 是否格式化
+     */
+    public CountDownTextView setShowFormatTime(boolean formatTime) {
+        mShowFormatTime = formatTime;
         return this;
     }
 
@@ -219,5 +264,25 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
                 return;
             }
         }
+    }
+
+    /**
+     * 将毫秒转时分秒
+     */
+    @SuppressLint("DefaultLocale")
+    public static String generateTime(long time) {
+        String format;
+        int totalSeconds = (int) (time / 1000);
+        int seconds = totalSeconds % 60;
+        int minutes = (totalSeconds / 60) % 60;
+        int hours = totalSeconds / 3600;
+        if (hours > 0) {
+            format = String.format("%02d时%02d分%02d秒", hours, minutes, seconds);
+        } else if (minutes > 0) {
+            format = String.format("%02d分%02d秒", minutes, seconds);
+        } else {
+            format = String.format("%2d秒", seconds);
+        }
+        return format;
     }
 }
