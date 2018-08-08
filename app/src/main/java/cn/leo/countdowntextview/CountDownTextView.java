@@ -108,8 +108,8 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
         startCount(second, TimeUnit.SECONDS);
     }
 
-    public void startCount(long second, final TimeUnit timeUnit) {
-        count(second, timeUnit, false);
+    public void startCount(long time, final TimeUnit timeUnit) {
+        count(time, timeUnit, false);
     }
 
     /**

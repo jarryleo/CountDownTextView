@@ -30,6 +30,7 @@ public class MainActivity extends AppCompatActivity {
                     public void onClick(View v) {
                         Toast.makeText(MainActivity.this, "短信已发送", Toast.LENGTH_SHORT).show();
                         mCountDownTextView.startCountDown(60);
+                        mCountDownTextView.startCount(60);
                     }
                 });
     }
