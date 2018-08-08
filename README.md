@@ -7,19 +7,21 @@
 ```
 mCountDownTextView.setNormalText("获取验证码")
                 .setCountDownText("重新获取(%1$ds)")
+                .setCloseKeepCountDown(true)//关闭页面保持倒计时开关
+                .setCountDownClickable(true)//倒计时期间点击事件是否生效开关
                 .setOnCountDownFinishListener(new CountDownTextView.OnCountDownFinishListener() {
                     @Override
                     public void onFinish() {
                         Toast.makeText(MainActivity.this, "倒计时完毕", Toast.LENGTH_SHORT).show();
                     }
+                })
+                .setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Toast.makeText(MainActivity.this, "短信已发送", Toast.LENGTH_SHORT).show();
+                        mCountDownTextView.startCountDown(60);
+                    }
                 });
-        mCountDownTextView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Toast.makeText(MainActivity.this, "短信已发送", Toast.LENGTH_SHORT).show();
-                mCountDownTextView.startCountDown(60);
-            }
-        });
         
 ```
 
