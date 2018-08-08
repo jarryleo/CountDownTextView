@@ -15,10 +15,10 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         mCountDownTextView = findViewById(R.id.tvCountDown);
         mCountDownTextView.setNormalText("获取验证码")
-                .setCountDownText("重新获取(", ")")
+                .setCountDownText("重新获取(", "s)")
                 .setCloseKeepCountDown(true)//关闭页面保持倒计时开关
-                .setCountDownClickable(true)//倒计时期间点击事件是否生效开关
-                .setShowFormatTime(true)//是否格式化时间
+                .setCountDownClickable(false)//倒计时期间点击事件是否生效开关
+                .setShowFormatTime(false)//是否格式化时间
                 .setOnCountDownFinishListener(new CountDownTextView.OnCountDownFinishListener() {
                     @Override
                     public void onFinish() {
@@ -30,7 +30,6 @@ public class MainActivity extends AppCompatActivity {
                     public void onClick(View v) {
                         Toast.makeText(MainActivity.this, "短信已发送", Toast.LENGTH_SHORT).show();
                         mCountDownTextView.startCountDown(60);
-                        mCountDownTextView.startCount(60);
                     }
                 });
     }
