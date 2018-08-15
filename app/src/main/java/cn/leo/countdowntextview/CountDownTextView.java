@@ -76,7 +76,9 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
 
     @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
     private void onResume() {
-        checkLastCountTimestamp();
+        if (mCountDownTimer == null) {
+            checkLastCountTimestamp();
+        }
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
@@ -260,6 +262,13 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
         }
     }
 
+    /**
+     * 持久化
+     *
+     * @param time        倒计时时长
+     * @param interval    倒计时间隔
+     * @param isCountDown 是否是倒计时而不是正向计时
+     */
     @SuppressLint("ApplySharedPref")
     private void setLastCountTimestamp(long time, long interval, boolean isCountDown) {
         getContext()
