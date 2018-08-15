@@ -21,6 +21,12 @@ public class MainActivity extends AppCompatActivity {
                 .setCloseKeepCountDown(true)//关闭页面保持倒计时开关
                 .setCountDownClickable(false)//倒计时期间点击事件是否生效开关
                 .setShowFormatTime(false)//是否格式化时间
+                .setOnCountDownStartListener(new CountDownTextView.OnCountDownStartListener() {
+                    @Override
+                    public void onStart() {
+                        Toast.makeText(MainActivity.this, "开始计时", Toast.LENGTH_SHORT).show();
+                    }
+                })
                 .setOnCountDownFinishListener(new CountDownTextView.OnCountDownFinishListener() {
                     @Override
                     public void onFinish() {

@@ -29,6 +29,7 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
     private static final String SHARED_PREFERENCES_FIELD_COUNTDOWN = "is_countdown";
 
     private CountDownTimer mCountDownTimer;
+    private OnCountDownStartListener mOnCountDownStartListener;
     private OnCountDownTickListener mOnCountDownTickListener;
     private OnCountDownFinishListener mOnCountDownFinishListener;
     private String mNormalText;
@@ -167,6 +168,9 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
         if (mCloseKeepCountDown && offset == 0) {
             setLastCountTimestamp(millisInFuture, interval, isCountDown);
         }
+        if (offset == 0 && mOnCountDownStartListener != null) {
+            mOnCountDownStartListener.onStart();
+        }
         if (TextUtils.isEmpty(mCountDownText)) {
             mCountDownText = getText().toString();
         }
@@ -198,6 +202,11 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
             }
         };
         mCountDownTimer.start();
+    }
+
+    public CountDownTextView setOnCountDownStartListener(OnCountDownStartListener onCountDownStartListener) {
+        mOnCountDownStartListener = onCountDownStartListener;
+        return this;
     }
 
     public CountDownTextView setOnCountDownTickListener(OnCountDownTickListener onCountDownTickListener) {
@@ -238,6 +247,10 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
     public CountDownTextView setShowFormatTime(boolean formatTime) {
         mShowFormatTime = formatTime;
         return this;
+    }
+
+    public interface OnCountDownStartListener {
+        void onStart();
     }
 
     public interface OnCountDownTickListener {
