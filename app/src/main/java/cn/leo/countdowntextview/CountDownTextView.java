@@ -25,6 +25,7 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
     private static final String SHARED_PREFERENCES_FILE = "CountDownTextView";
     private static final String SHARED_PREFERENCES_FIELD_TIMESTAMP = "last_count_timestamp";
     private static final String SHARED_PREFERENCES_FIELD_INTERVAL = "count_interval";
+    private static final String SHARED_PREFERENCES_FIELD_COUNTDOWN = "is_countdown";
 
     private CountDownTimer mCountDownTimer;
     private OnCountDownTickListener mOnCountDownTickListener;
@@ -56,6 +57,20 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
         if (context instanceof LifecycleOwner) {
             ((LifecycleOwner) context).getLifecycle().addObserver(this);
         }
+    }
+
+    /**
+     * 绑定生命周期
+     * 上面的自动绑定只能绑定 activity,如果是在fragment,请使用本方法手动绑定
+     *
+     * @param lifecycleOwner 支持activity或fragment
+     */
+    public CountDownTextView bindLifecycle(LifecycleOwner lifecycleOwner) {
+        if (getContext() instanceof LifecycleOwner) {
+            ((LifecycleOwner) getContext()).getLifecycle().removeObserver(this);
+        }
+        lifecycleOwner.getLifecycle().addObserver(this);
+        return this;
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
@@ -109,6 +124,9 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
     }
 
     public void startCount(long time, final TimeUnit timeUnit) {
+        if (checkLastCountTimestamp()) {
+            return;
+        }
         count(time, timeUnit, false);
     }
 
@@ -122,6 +140,9 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
     }
 
     public void startCountDown(long time, final TimeUnit timeUnit) {
+        if (checkLastCountTimestamp()) {
+            return;
+        }
         count(time, timeUnit, true);
     }
 
@@ -137,10 +158,11 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
             mCountDownTimer.cancel();
             mCountDownTimer = null;
         }
+        setEnabled(mClickable);
         final long millisInFuture = timeUnit.toMillis(time) + 500;
         long interval = TimeUnit.MILLISECONDS.convert(1, timeUnit);
         if (mCloseKeepCountDown) {
-            setLastCountTimestamp(millisInFuture, interval);
+            setLastCountTimestamp(millisInFuture, interval, isCountDown);
         }
         if (TextUtils.isEmpty(mCountDownText)) {
             mCountDownText = getText().toString();
@@ -164,6 +186,7 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
 
             @Override
             public void onFinish() {
+                setEnabled(true);
                 mCountDownTimer = null;
                 setText(mNormalText);
                 if (mOnCountDownFinishListener != null) {
@@ -237,33 +260,36 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
     }
 
     @SuppressLint("ApplySharedPref")
-    private void setLastCountTimestamp(long time, long interval) {
+    private void setLastCountTimestamp(long time, long interval, boolean isCountDown) {
         getContext()
                 .getSharedPreferences(SHARED_PREFERENCES_FILE, Context.MODE_PRIVATE)
                 .edit()
                 .putLong(SHARED_PREFERENCES_FIELD_TIMESTAMP, Calendar.getInstance().getTimeInMillis() + time)
                 .putLong(SHARED_PREFERENCES_FIELD_INTERVAL, interval)
+                .putBoolean(SHARED_PREFERENCES_FIELD_COUNTDOWN, isCountDown)
                 .commit();
 
     }
 
-    private void checkLastCountTimestamp() {
+    private boolean checkLastCountTimestamp() {
         SharedPreferences sp = getContext().getSharedPreferences(SHARED_PREFERENCES_FILE, Context.MODE_PRIVATE);
         long lastCountTimestamp = sp.getLong(SHARED_PREFERENCES_FIELD_TIMESTAMP, -1);
         long nowTimeMillis = Calendar.getInstance().getTimeInMillis();
         long diff = lastCountTimestamp - nowTimeMillis;
         if (diff <= 0) {
-            return;
+            return false;
         }
         long interval = sp.getLong(SHARED_PREFERENCES_FIELD_INTERVAL, -1);
+        boolean isCountDown = sp.getBoolean(SHARED_PREFERENCES_FIELD_COUNTDOWN, true);
         for (TimeUnit timeUnit : TimeUnit.values()) {
             long convert = timeUnit.convert(interval, TimeUnit.MILLISECONDS);
             if (convert == 1) {
                 long time = timeUnit.convert(diff, TimeUnit.MILLISECONDS);
-                startCountDown(time, timeUnit);
-                return;
+                count(time, timeUnit, isCountDown);
+                return true;
             }
         }
+        return false;
     }
 
     /**
