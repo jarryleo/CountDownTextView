@@ -124,7 +124,7 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
     }
 
     public void startCount(long time, final TimeUnit timeUnit) {
-        if (checkLastCountTimestamp()) {
+        if (mCloseKeepCountDown && checkLastCountTimestamp()) {
             return;
         }
         count(time, timeUnit, false);
@@ -140,7 +140,7 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
     }
 
     public void startCountDown(long time, final TimeUnit timeUnit) {
-        if (checkLastCountTimestamp()) {
+        if (mCloseKeepCountDown && checkLastCountTimestamp()) {
             return;
         }
         count(time, timeUnit, true);
