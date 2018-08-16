@@ -9,12 +9,16 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.CountDownTimer;
 import android.support.annotation.Nullable;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.FragmentManager;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.view.View;
 import android.widget.TextView;
 
 import java.util.Calendar;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -56,23 +60,31 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
     }
 
     private void init(Context context) {
-        if (context instanceof LifecycleOwner) {
-            ((LifecycleOwner) context).getLifecycle().addObserver(this);
-        }
+        autoBindLifecycle(context);
     }
 
     /**
-     * 绑定生命周期
-     * 上面的自动绑定只能绑定 activity,如果是在fragment,请使用本方法手动绑定
-     *
-     * @param lifecycleOwner 支持activity或fragment
+     * 控件自动绑定生命周期,宿主可以是activity或者fragment
      */
-    public CountDownTextView bindLifecycle(LifecycleOwner lifecycleOwner) {
-        if (getContext() instanceof LifecycleOwner) {
-            ((LifecycleOwner) getContext()).getLifecycle().removeObserver(this);
+    private void autoBindLifecycle(Context context) {
+        if (context instanceof FragmentActivity) {
+            FragmentActivity activity = (FragmentActivity) context;
+            FragmentManager fm = activity.getSupportFragmentManager();
+            List<Fragment> fragments = fm.getFragments();
+            for (Fragment fragment : fragments) {
+                View parent = fragment.getView();
+                if (parent != null) {
+                    View find = parent.findViewById(getId());
+                    if (find == this) {
+                        fragment.getLifecycle().addObserver(this);
+                        return;
+                    }
+                }
+            }
         }
-        lifecycleOwner.getLifecycle().addObserver(this);
-        return this;
+        if (context instanceof LifecycleOwner) {
+            ((LifecycleOwner) context).getLifecycle().addObserver(this);
+        }
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)

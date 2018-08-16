@@ -1,8 +1,10 @@
 package cn.leo.countdowntextview;
 
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
+import android.view.ViewAnimationUtils;
 import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity {
@@ -16,8 +18,9 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         mCountDownTextView = findViewById(R.id.tvCountDown);
         mCountDownTextView2 = findViewById(R.id.tvCountDown2);
-        mCountDownTextView.setNormalText("获取验证码1")
-                .setCountDownText("重新获取1(", "s)")
+        mCountDownTextView
+                .setNormalText("获取验证码")
+                .setCountDownText("重新获取(", "s)")
                 .setCloseKeepCountDown(true)//关闭页面保持倒计时开关
                 .setCountDownClickable(false)//倒计时期间点击事件是否生效开关
                 .setShowFormatTime(false)//是否格式化时间
