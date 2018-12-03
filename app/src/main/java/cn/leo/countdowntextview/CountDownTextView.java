@@ -39,12 +39,22 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
     private String mNormalText;
     private String mCountDownText;
     private OnClickListener mOnClickListener;
-    //倒计时期间是否允许点击
+    /**
+     * 倒计时期间是否允许点击
+     */
     private boolean mClickable = false;
-    //页面关闭后倒计时是否保持，再次开启倒计时继续；持久化存储，不会执行代码
+    /**
+     * 页面关闭后倒计时是否保持，再次开启倒计时继续；
+     */
     private boolean mCloseKeepCountDown = false;
-    //是否把时间格式化成时分秒
+    /**
+     * 是否把时间格式化成时分秒
+     */
     private boolean mShowFormatTime = false;
+    /**
+     * 倒计时间隔
+     */
+    private TimeUnit mIntervalUnit = TimeUnit.SECONDS;
 
     public CountDownTextView(Context context) {
         this(context, null);
@@ -131,6 +141,16 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
     }
 
     /**
+     * 设置倒计时间隔
+     *
+     * @param intervalUnit
+     */
+    public CountDownTextView setIntervalUnit(TimeUnit intervalUnit) {
+        mIntervalUnit = intervalUnit;
+        return this;
+    }
+
+    /**
      * 顺序计时，非倒计时
      *
      * @param second 计时时间秒
@@ -176,7 +196,7 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
         }
         setEnabled(mClickable);
         final long millisInFuture = timeUnit.toMillis(time) + 500;
-        long interval = TimeUnit.MILLISECONDS.convert(1, timeUnit);
+        long interval = TimeUnit.MILLISECONDS.convert(1, mIntervalUnit);
         if (mCloseKeepCountDown && offset == 0) {
             setLastCountTimestamp(millisInFuture, interval, isCountDown);
         }
@@ -262,14 +282,25 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
     }
 
     public interface OnCountDownStartListener {
+        /**
+         * 计时开始回调;反序列化时不会回调
+         */
         void onStart();
     }
 
     public interface OnCountDownTickListener {
+        /**
+         * 计时回调
+         *
+         * @param untilFinished 剩余时间,单位为开始计时传入的单位
+         */
         void onTick(long untilFinished);
     }
 
     public interface OnCountDownFinishListener {
+        /**
+         * 计时结束回调
+         */
         void onFinish();
     }
 
@@ -281,7 +312,9 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
 
     @Override
     public void onClick(View v) {
-        if (mCountDownTimer != null && !mClickable) return;
+        if (mCountDownTimer != null && !mClickable) {
+            return;
+        }
         if (mOnClickListener != null) {
             mOnClickListener.onClick(v);
         }
