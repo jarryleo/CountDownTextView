@@ -1,121 +1,103 @@
-package cn.leo.countdowntextview;
+package cn.leo.countdowntextview
 
-import android.annotation.SuppressLint;
-import android.arch.lifecycle.Lifecycle;
-import android.arch.lifecycle.LifecycleObserver;
-import android.arch.lifecycle.LifecycleOwner;
-import android.arch.lifecycle.OnLifecycleEvent;
-import android.content.Context;
-import android.content.SharedPreferences;
-import android.os.CountDownTimer;
-import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentActivity;
-import android.support.v4.app.FragmentManager;
-import android.text.TextUtils;
-import android.util.AttributeSet;
-import android.view.View;
-import android.widget.TextView;
-
-import java.util.Calendar;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
+import android.annotation.SuppressLint
+import android.content.Context
+import android.os.CountDownTimer
+import android.text.TextUtils
+import android.util.AttributeSet
+import android.view.View
+import androidx.appcompat.widget.AppCompatTextView
+import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import java.util.Calendar
+import java.util.concurrent.TimeUnit
 
 /**
  * create by : Jarry Leo
  * date : 2018/7/26 10:19
+ * update : 2023/8/25 11:49
  */
-public class CountDownTextView extends TextView implements LifecycleObserver, View.OnClickListener {
-    private static final String SHARED_PREFERENCES_FILE = "CountDownTextView";
-    private static final String SHARED_PREFERENCES_FIELD_TIME = "last_count_time";
-    private static final String SHARED_PREFERENCES_FIELD_TIMESTAMP = "last_count_timestamp";
-    private static final String SHARED_PREFERENCES_FIELD_INTERVAL = "count_interval";
-    private static final String SHARED_PREFERENCES_FIELD_COUNTDOWN = "is_countdown";
+@SuppressLint("UNUSED")
+class CountDownTextView @JvmOverloads constructor(
+    context: Context,
+    attrs: AttributeSet? = null,
+    defStyleAttr: Int = 0
+) : AppCompatTextView(context, attrs, defStyleAttr), DefaultLifecycleObserver,
+    View.OnClickListener {
+    private var mCountDownTimer: CountDownTimer? = null
+    private var mOnCountDownStartListener: OnCountDownStartListener? = null
+    private var mOnCountDownTickListener: OnCountDownTickListener? = null
+    private var mOnCountDownFinishListener: OnCountDownFinishListener? = null
+    private var mNormalText: String? = null
+    private var mCountDownText: String? = null
+    private var mOnClickListener: OnClickListener? = null
 
-    private CountDownTimer mCountDownTimer;
-    private OnCountDownStartListener mOnCountDownStartListener;
-    private OnCountDownTickListener mOnCountDownTickListener;
-    private OnCountDownFinishListener mOnCountDownFinishListener;
-    private String mNormalText;
-    private String mCountDownText;
-    private OnClickListener mOnClickListener;
     /**
      * 倒计时期间是否允许点击
      */
-    private boolean mClickable = false;
+    private var mClickable = false
+
     /**
      * 页面关闭后倒计时是否保持，再次开启倒计时继续；
      */
-    private boolean mCloseKeepCountDown = false;
+    private var mCloseKeepCountDown = false
+
     /**
      * 是否把时间格式化成时分秒
      */
-    private boolean mShowFormatTime = false;
+    private var mShowFormatTime = false
+
     /**
      * 倒计时间隔
      */
-    private TimeUnit mIntervalUnit = TimeUnit.SECONDS;
+    private var mIntervalUnit = TimeUnit.SECONDS
 
-    public CountDownTextView(Context context) {
-        this(context, null);
+    init {
+        init(context)
     }
 
-    public CountDownTextView(Context context, @Nullable AttributeSet attrs) {
-        this(context, attrs, 0);
-    }
-
-    public CountDownTextView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
-        super(context, attrs, defStyleAttr);
-        init(context);
-    }
-
-    private void init(Context context) {
-        autoBindLifecycle(context);
+    private fun init(context: Context) {
+        autoBindLifecycle(context)
     }
 
     /**
      * 控件自动绑定生命周期,宿主可以是activity或者fragment
      */
-    private void autoBindLifecycle(Context context) {
-        if (context instanceof FragmentActivity) {
-            FragmentActivity activity = (FragmentActivity) context;
-            FragmentManager fm = activity.getSupportFragmentManager();
-            List<Fragment> fragments = fm.getFragments();
-            for (Fragment fragment : fragments) {
-                View parent = fragment.getView();
-                if (parent != null) {
-                    View find = parent.findViewById(getId());
-                    if (find == this) {
-                        fragment.getLifecycle().addObserver(this);
-                        return;
-                    }
-                }
-            }
+    private fun autoBindLifecycle(context: Context) {
+        if (context is FragmentActivity) {
+            val fm = context.supportFragmentManager
+            fm.fragments.find {
+                it.view?.findViewById<View>(id) === this
+            }?.lifecycle?.addObserver(this)
         }
-        if (context instanceof LifecycleOwner) {
-            ((LifecycleOwner) context).getLifecycle().addObserver(this);
+        if (context is LifecycleOwner) {
+            (context as LifecycleOwner).lifecycle.addObserver(this)
         }
     }
 
-    @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
-    private void onResume() {
+    override fun onResume(owner: LifecycleOwner) {
+        super.onResume(owner)
         if (mCountDownTimer == null) {
-            checkLastCountTimestamp();
+            checkLastCountTimestamp()
         }
     }
 
-    @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-    private void onDestroy() {
+        private fun onDestroy() {
         if (mCountDownTimer != null) {
-            mCountDownTimer.cancel();
-            mCountDownTimer = null;
+            mCountDownTimer?.cancel()
+            mCountDownTimer = null
         }
     }
 
-    @Override
-    protected void onDetachedFromWindow() {
-        super.onDetachedFromWindow();
-        onDestroy();
+    override fun onDestroy(owner: LifecycleOwner) {
+        super.onDestroy(owner)
+        onDestroy()
+    }
+
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        onDestroy()
     }
 
     /**
@@ -123,10 +105,10 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
      *
      * @param normalText 文本
      */
-    public CountDownTextView setNormalText(String normalText) {
-        mNormalText = normalText;
-        setText(normalText);
-        return this;
+    fun setNormalText(normalText: String?): CountDownTextView {
+        mNormalText = normalText
+        text = normalText
+        return this
     }
 
     /**
@@ -135,9 +117,19 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
      * @param front  倒计时文本前部分
      * @param latter 倒计时文本后部分
      */
-    public CountDownTextView setCountDownText(String front, String latter) {
-        mCountDownText = front + "%1$s" + latter;
-        return this;
+    fun setCountDownText(front: String, latter: String): CountDownTextView {
+        mCountDownText = "$front%1\$s$latter"
+        return this
+    }
+
+    /**
+     * 设置倒计时文本内容
+     *
+     * @param text  倒计时文本,需包含%s作为倒计时文本占位符
+     */
+    fun setCountDownText(text: String): CountDownTextView {
+        mCountDownText = text
+        return this
     }
 
     /**
@@ -145,9 +137,9 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
      *
      * @param intervalUnit
      */
-    public CountDownTextView setIntervalUnit(TimeUnit intervalUnit) {
-        mIntervalUnit = intervalUnit;
-        return this;
+    fun setIntervalUnit(intervalUnit: TimeUnit): CountDownTextView {
+        mIntervalUnit = intervalUnit
+        return this
     }
 
     /**
@@ -155,15 +147,15 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
      *
      * @param second 计时时间秒
      */
-    public void startCount(long second) {
-        startCount(second, TimeUnit.SECONDS);
+    fun startCount(second: Long) {
+        startCount(second, TimeUnit.SECONDS)
     }
 
-    public void startCount(long time, final TimeUnit timeUnit) {
+    fun startCount(time: Long, timeUnit: TimeUnit) {
         if (mCloseKeepCountDown && checkLastCountTimestamp()) {
-            return;
+            return
         }
-        count(time, 0, timeUnit, false);
+        count(time, 0, timeUnit, false)
     }
 
     /**
@@ -171,15 +163,15 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
      *
      * @param second 多少秒
      */
-    public void startCountDown(long second) {
-        startCountDown(second, TimeUnit.SECONDS);
+    fun startCountDown(second: Long) {
+        startCountDown(second, TimeUnit.SECONDS)
     }
 
-    public void startCountDown(long time, final TimeUnit timeUnit) {
+    fun startCountDown(time: Long, timeUnit: TimeUnit) {
         if (mCloseKeepCountDown && checkLastCountTimestamp()) {
-            return;
+            return
         }
-        count(time, 0, timeUnit, true);
+        count(time, 0, timeUnit, true)
     }
 
     /**
@@ -189,66 +181,68 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
      * @param timeUnit    时间单位
      * @param isCountDown 是否是倒计时，false正向计时
      */
-    private void count(final long time, final long offset, final TimeUnit timeUnit, final boolean isCountDown) {
-        if (mCountDownTimer != null) {
-            mCountDownTimer.cancel();
-            mCountDownTimer = null;
+    private fun count(time: Long, offset: Long, timeUnit: TimeUnit, isCountDown: Boolean) {
+        mCountDownTimer?.cancel()
+        mCountDownTimer = null
+        isEnabled = mClickable
+        val millisInFuture = timeUnit.toMillis(time) + 500
+        val interval = TimeUnit.MILLISECONDS.convert(1, mIntervalUnit)
+        if (mCloseKeepCountDown && offset == 0L) {
+            setLastCountTimestamp(millisInFuture, interval, isCountDown)
         }
-        setEnabled(mClickable);
-        final long millisInFuture = timeUnit.toMillis(time) + 500;
-        long interval = TimeUnit.MILLISECONDS.convert(1, mIntervalUnit);
-        if (mCloseKeepCountDown && offset == 0) {
-            setLastCountTimestamp(millisInFuture, interval, isCountDown);
-        }
-        if (offset == 0 && mOnCountDownStartListener != null) {
-            mOnCountDownStartListener.onStart();
+        if (offset == 0L) {
+            mOnCountDownStartListener?.onStart()
         }
         if (TextUtils.isEmpty(mCountDownText)) {
-            mCountDownText = getText().toString();
+            mCountDownText = text.toString()
         }
-        mCountDownTimer = new CountDownTimer(millisInFuture, interval) {
-            @Override
-            public void onTick(long millisUntilFinished) {
-                long count = isCountDown ? millisUntilFinished : (millisInFuture - millisUntilFinished + offset);
-                long l = timeUnit.convert(count, TimeUnit.MILLISECONDS);
-                String showTime;
-                if (mShowFormatTime) {
-                    showTime = generateTime(count);
+        mCountDownTimer = object : CountDownTimer(millisInFuture, interval) {
+            override fun onTick(millisUntilFinished: Long) {
+                val count =
+                    if (isCountDown) millisUntilFinished else millisInFuture - millisUntilFinished + offset
+                val l = timeUnit.convert(count, TimeUnit.MILLISECONDS)
+                val showTime: String = if (mShowFormatTime) {
+                    generateTime(count)
                 } else {
-                    showTime = String.valueOf(l);
+                    l.toString()
                 }
-                setText(String.format(mCountDownText, showTime));
-                if (mOnCountDownTickListener != null) {
-                    mOnCountDownTickListener.onTick(l);
+                text = try {
+                    val countDownText = mCountDownText
+                    if (countDownText.isNullOrBlank()){
+                        showTime
+                    } else {
+                        String.format(countDownText, showTime)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    showTime
                 }
+                mOnCountDownTickListener?.onTick(l)
             }
 
-            @Override
-            public void onFinish() {
-                setEnabled(true);
-                mCountDownTimer = null;
-                setText(mNormalText);
-                if (mOnCountDownFinishListener != null) {
-                    mOnCountDownFinishListener.onFinish();
-                }
+            override fun onFinish() {
+                isEnabled = true
+                mCountDownTimer = null
+                text = mNormalText
+                mOnCountDownFinishListener?.onFinish()
             }
-        };
-        mCountDownTimer.start();
+        }
+        mCountDownTimer?.start()
     }
 
-    public CountDownTextView setOnCountDownStartListener(OnCountDownStartListener onCountDownStartListener) {
-        mOnCountDownStartListener = onCountDownStartListener;
-        return this;
+    fun setOnCountDownStartListener(onCountDownStartListener: OnCountDownStartListener?): CountDownTextView {
+        mOnCountDownStartListener = onCountDownStartListener
+        return this
     }
 
-    public CountDownTextView setOnCountDownTickListener(OnCountDownTickListener onCountDownTickListener) {
-        mOnCountDownTickListener = onCountDownTickListener;
-        return this;
+    fun setOnCountDownTickListener(onCountDownTickListener: OnCountDownTickListener?): CountDownTextView {
+        mOnCountDownTickListener = onCountDownTickListener
+        return this
     }
 
-    public CountDownTextView setOnCountDownFinishListener(OnCountDownFinishListener onCountDownFinishListener) {
-        mOnCountDownFinishListener = onCountDownFinishListener;
-        return this;
+    fun setOnCountDownFinishListener(onCountDownFinishListener: OnCountDownFinishListener?): CountDownTextView {
+        mOnCountDownFinishListener = onCountDownFinishListener
+        return this
     }
 
     /**
@@ -256,9 +250,9 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
      *
      * @param clickable 是否响应
      */
-    public CountDownTextView setCountDownClickable(boolean clickable) {
-        mClickable = clickable;
-        return this;
+    fun setCountDownClickable(clickable: Boolean): CountDownTextView {
+        mClickable = clickable
+        return this
     }
 
     /**
@@ -266,9 +260,9 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
      *
      * @param keep 是否保持
      */
-    public CountDownTextView setCloseKeepCountDown(boolean keep) {
-        mCloseKeepCountDown = keep;
-        return this;
+    fun setCloseKeepCountDown(keep: Boolean): CountDownTextView {
+        mCloseKeepCountDown = keep
+        return this
     }
 
     /**
@@ -276,48 +270,44 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
      *
      * @param formatTime 是否格式化
      */
-    public CountDownTextView setShowFormatTime(boolean formatTime) {
-        mShowFormatTime = formatTime;
-        return this;
+    fun setShowFormatTime(formatTime: Boolean): CountDownTextView {
+        mShowFormatTime = formatTime
+        return this
     }
 
-    public interface OnCountDownStartListener {
+    fun interface OnCountDownStartListener {
         /**
          * 计时开始回调;反序列化时不会回调
          */
-        void onStart();
+        fun onStart()
     }
 
-    public interface OnCountDownTickListener {
+    fun interface OnCountDownTickListener {
         /**
          * 计时回调
          *
          * @param untilFinished 剩余时间,单位为开始计时传入的单位
          */
-        void onTick(long untilFinished);
+        fun onTick(untilFinished: Long)
     }
 
-    public interface OnCountDownFinishListener {
+    fun interface OnCountDownFinishListener {
         /**
          * 计时结束回调
          */
-        void onFinish();
+        fun onFinish()
     }
 
-    @Override
-    public void setOnClickListener(@Nullable OnClickListener l) {
-        mOnClickListener = l;
-        super.setOnClickListener(this);
+    override fun setOnClickListener(l: OnClickListener?) {
+        mOnClickListener = l
+        super.setOnClickListener(this)
     }
 
-    @Override
-    public void onClick(View v) {
+    override fun onClick(v: View) {
         if (mCountDownTimer != null && !mClickable) {
-            return;
+            return
         }
-        if (mOnClickListener != null) {
-            mOnClickListener.onClick(v);
-        }
+        mOnClickListener?.onClick(v)
     }
 
     /**
@@ -328,16 +318,18 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
      * @param isCountDown 是否是倒计时而不是正向计时
      */
     @SuppressLint("ApplySharedPref")
-    private void setLastCountTimestamp(long time, long interval, boolean isCountDown) {
-        getContext()
-                .getSharedPreferences(SHARED_PREFERENCES_FILE, Context.MODE_PRIVATE)
-                .edit()
-                .putLong(SHARED_PREFERENCES_FIELD_TIME + getId(), time)
-                .putLong(SHARED_PREFERENCES_FIELD_TIMESTAMP + getId(), Calendar.getInstance().getTimeInMillis() + time)
-                .putLong(SHARED_PREFERENCES_FIELD_INTERVAL + getId(), interval)
-                .putBoolean(SHARED_PREFERENCES_FIELD_COUNTDOWN + getId(), isCountDown)
-                .commit();
-
+    private fun setLastCountTimestamp(time: Long, interval: Long, isCountDown: Boolean) {
+        context
+            .getSharedPreferences(SHARED_PREFERENCES_FILE, Context.MODE_PRIVATE)
+            .edit()
+            .putLong(SHARED_PREFERENCES_FIELD_TIME + id, time)
+            .putLong(
+                SHARED_PREFERENCES_FIELD_TIMESTAMP + id,
+                Calendar.getInstance().timeInMillis + time
+            )
+            .putLong(SHARED_PREFERENCES_FIELD_INTERVAL + id, interval)
+            .putBoolean(SHARED_PREFERENCES_FIELD_COUNTDOWN + id, isCountDown)
+            .commit()
     }
 
     /**
@@ -345,46 +337,54 @@ public class CountDownTextView extends TextView implements LifecycleObserver, Vi
      *
      * @return 是否要保持持久化计时
      */
-    private boolean checkLastCountTimestamp() {
-        SharedPreferences sp = getContext().getSharedPreferences(SHARED_PREFERENCES_FILE, Context.MODE_PRIVATE);
-        long lastCountTimestamp = sp.getLong(SHARED_PREFERENCES_FIELD_TIMESTAMP + getId(), -1);
-        long nowTimeMillis = Calendar.getInstance().getTimeInMillis();
-        long diff = lastCountTimestamp - nowTimeMillis;
+    private fun checkLastCountTimestamp(): Boolean {
+        val sp = context.getSharedPreferences(SHARED_PREFERENCES_FILE, Context.MODE_PRIVATE)
+        val lastCountTimestamp = sp.getLong(SHARED_PREFERENCES_FIELD_TIMESTAMP + id, -1)
+        val nowTimeMillis = Calendar.getInstance().timeInMillis
+        val diff = lastCountTimestamp - nowTimeMillis
         if (diff <= 0) {
-            return false;
+            return false
         }
-        long time = sp.getLong(SHARED_PREFERENCES_FIELD_TIME + getId(), -1);
-        long interval = sp.getLong(SHARED_PREFERENCES_FIELD_INTERVAL + getId(), -1);
-        boolean isCountDown = sp.getBoolean(SHARED_PREFERENCES_FIELD_COUNTDOWN + getId(), true);
-        for (TimeUnit timeUnit : TimeUnit.values()) {
-            long convert = timeUnit.convert(interval, TimeUnit.MILLISECONDS);
-            if (convert == 1) {
-                long last = timeUnit.convert(diff, TimeUnit.MILLISECONDS);
-                long offset = time - diff;
-                count(last, offset, timeUnit, isCountDown);
-                return true;
+        val time = sp.getLong(SHARED_PREFERENCES_FIELD_TIME + id, -1)
+        val interval = sp.getLong(SHARED_PREFERENCES_FIELD_INTERVAL + id, -1)
+        val isCountDown = sp.getBoolean(SHARED_PREFERENCES_FIELD_COUNTDOWN + id, true)
+        for (timeUnit in TimeUnit.values()) {
+            val convert = timeUnit.convert(interval, TimeUnit.MILLISECONDS)
+            if (convert == 1L) {
+                val last = timeUnit.convert(diff, TimeUnit.MILLISECONDS)
+                val offset = time - diff
+                count(last, offset, timeUnit, isCountDown)
+                return true
             }
         }
-        return false;
+        return false
     }
 
-    /**
-     * 将毫秒转时分秒
-     */
-    @SuppressLint("DefaultLocale")
-    public static String generateTime(long time) {
-        String format;
-        int totalSeconds = (int) (time / 1000);
-        int seconds = totalSeconds % 60;
-        int minutes = (totalSeconds / 60) % 60;
-        int hours = totalSeconds / 3600;
-        if (hours > 0) {
-            format = String.format("%02d时%02d分%02d秒", hours, minutes, seconds);
-        } else if (minutes > 0) {
-            format = String.format("%02d分%02d秒", minutes, seconds);
-        } else {
-            format = String.format("%2d秒", seconds);
+    companion object {
+        private const val SHARED_PREFERENCES_FILE = "CountDownTextView"
+        private const val SHARED_PREFERENCES_FIELD_TIME = "last_count_time"
+        private const val SHARED_PREFERENCES_FIELD_TIMESTAMP = "last_count_timestamp"
+        private const val SHARED_PREFERENCES_FIELD_INTERVAL = "count_interval"
+        private const val SHARED_PREFERENCES_FIELD_COUNTDOWN = "is_countdown"
+
+        /**
+         * 将毫秒转时分秒
+         */
+        @SuppressLint("DefaultLocale")
+        fun generateTime(time: Long): String {
+            val format: String
+            val totalSeconds = (time / 1000).toInt()
+            val seconds = totalSeconds % 60
+            val minutes = totalSeconds / 60 % 60
+            val hours = totalSeconds / 3600
+            format = if (hours > 0) {
+                String.format("%02d时%02d分%02d秒", hours, minutes, seconds)
+            } else if (minutes > 0) {
+                String.format("%02d分%02d秒", minutes, seconds)
+            } else {
+                String.format("%2d秒", seconds)
+            }
+            return format
         }
-        return format;
     }
 }
